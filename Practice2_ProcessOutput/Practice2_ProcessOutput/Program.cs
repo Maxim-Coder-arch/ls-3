@@ -1,53 +1,33 @@
-using System;
-using System.Diagnostics;
-using System.ComponentModel;
+using System.Text;
+using Practice2_ProcessOutput.Application;
+using Practice2_ProcessOutput.Configuration;
+using Practice2_ProcessOutput.Domain;
+using Practice2_ProcessOutput.Infrastructure;
+using Practice2_ProcessOutput.Presentation;
 
-public class Program
+namespace Practice2_ProcessOutput;
+
+public static class Program
 {
-    public static async Task Main()
+    public static async Task<int> Main(string[] commandLineArguments)
     {
-        ProcessStartInfo startInfo = new()
-        {
-            FileName = "dotnet",
-            UseShellExecute = false,
-            CreateNoWindow = true,
+        Console.OutputEncoding = Encoding.UTF8;
 
-            // TODO 1. Включите перенаправление stdout.
-            // TODO 2. Включите перенаправление stderr.
-        };
+        using ConsoleCancellationScope cancellationScope = new();
 
-        startInfo.ArgumentList.Add("--info");
+        ProcessLaunchRequest launchRequest = ProcessLaunchRequestFactory.CreateFromCommandLineArguments(
+            commandLineArguments,
+            Environment.CurrentDirectory);
 
-        using Process process = new()
-        {
-            StartInfo = startInfo
-        };
+        ConsoleProcessExecutionReporter executionReporter = new(Console.Out);
 
-        Stopwatch stopwatch = Stopwatch.StartNew();
+        SystemProcessLauncher processLauncher = new(new ProcessStartInfoFactory());
 
-        try
-        {
-            // TODO 3. Запустите процесс.
-            process.Start();
+        ProcessDispatcher processDispatcher = new(
+            processLauncher,
+            executionReporter,
+            executionReporter);
 
-            Console.WriteLine($"PID: {process.Id}");
-
-            // TODO 4. Начните чтение stdout асинхронно.
-            // TODO 5. Начните чтение stderr асинхронно.
-            // Важно: начать оба чтения до ожидания завершения.
-
-            // TODO 6. Дождитесь завершения процесса.
-
-            // TODO 7. Получите оба результата чтения.
-            // TODO 8. Остановите секундомер.
-
-            // TODO 9. Выведите длительность и ExitCode.
-            // TODO 10. Выведите stdout и stderr отдельно.
-        }
-        catch (Win32Exception ex)
-        {
-            stopwatch.Stop();
-            Console.WriteLine($"Ошибка запуска: {ex.Message}");
-        }
+        return await processDispatcher.DispatchAsync(launchRequest, cancellationScope.Token);
     }
 }

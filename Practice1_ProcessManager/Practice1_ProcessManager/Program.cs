@@ -1,52 +1,33 @@
-using System;
-using System.Diagnostics;
-using System.ComponentModel;
+using System.Text;
+using Practice1_ProcessManager.Application;
+using Practice1_ProcessManager.Configuration;
+using Practice1_ProcessManager.Domain;
+using Practice1_ProcessManager.Infrastructure;
+using Practice1_ProcessManager.Presentation;
 
-public class Program
+namespace Practice1_ProcessManager;
+
+public static class Program
 {
-    public static async Task Main()
+    public static async Task<int> Main(string[] commandLineArguments)
     {
-        // Используем dotnet --info как безопасную утилиту.
-        // Если dotnet недоступен через PATH, замените
-        // FileName на путь к другой разрешённой утилите.
+        Console.OutputEncoding = Encoding.UTF8;
 
-        ProcessStartInfo startInfo = new()
-        {
-            FileName = "dotnet",
-            UseShellExecute = false,
-            CreateNoWindow = true
-        };
+        using ConsoleCancellationScope cancellationScope = new();
 
-        // TODO 1. Добавьте аргумент "--info"
-        // через startInfo.ArgumentList.
+        ProcessLaunchRequest launchRequest = ProcessLaunchRequestFactory.CreateFromCommandLineArguments(
+            commandLineArguments,
+            Environment.CurrentDirectory);
 
-        // TODO 2. Укажите рабочую директорию
-        // Environment.CurrentDirectory.
+        ConsoleProcessExecutionReporter executionReporter = new(Console.Out);
 
-        using Process process = new()
-        {
-            StartInfo = startInfo
-        };
+        SystemProcessLauncher processLauncher = new(new ProcessStartInfoFactory());
 
-        Stopwatch stopwatch = new();
+        ProcessDispatcher processDispatcher = new(
+            processLauncher,
+            executionReporter,
+            executionReporter);
 
-        try
-        {
-            // TODO 3. Запустите секундомер.
-            // TODO 4. Запустите процесс через Start().
-            // TODO 5. Выведите PID процесса.
-
-            // TODO 6. Дождитесь завершения через
-            // await process.WaitForExitAsync().
-
-            // TODO 7. Остановите секундомер.
-            // TODO 8. Выведите длительность и ExitCode.
-        }
-        catch (Win32Exception ex)
-        {
-            // TODO 9. Сообщите об ошибке запуска.
-            // Не используйте пустой catch.
-            Console.WriteLine($"Ошибка запуска: {ex.Message}");
-        }
+        return await processDispatcher.DispatchAsync(launchRequest, cancellationScope.Token);
     }
 }
